@@ -1,0 +1,116 @@
+#ifndef __HTTP_TYPES_H__
+#define __HTTP_TYPES_H__
+
+#include <stdint.h>
+#include <stddef.h>
+
+typedef enum http_method {
+    GET,
+    POST,
+    OPTIONS,
+    PUT,
+    PATCH,
+    DELETE,
+    HEAD,
+    CONNECT,
+    TRACE,
+    UNKNOWN
+} http_method_t;
+
+typedef enum http_status {
+    //Informative status codes
+    STATUS_CODE__CONTINUE = 100,
+    STATUS_CODE__SWITCHING_PROTOCOLS = 101,
+    STATUS_CODE__PROCESSING = 102,
+    STATUS_CODE__EARLY_HINTS = 103,
+
+    //Successfull responce
+    STATUS_CODE__OK = 200,
+    STATUS_CODE__CREATED = 201,
+    STATUS_CODE__ACCEPTED = 202,
+    STATUS_CODE__NON_AUTHORITATIVE_INFORMATION = 203,
+    STATUS_CODE__NO_CONTENT = 204,
+    STATUS_CODE__RESET_CONTENT = 205,
+    STATUS_CODE__PARTIAL_CONTENT = 206,
+    STATUS_CODE__MULTI_STATUS = 207,
+    STATUS_CODE__ALREADY_REPORTED = 208,
+    STATUS_CODE__IM_USED = 226,
+
+    //Redirection status codes
+    STATUS_CODE__MULTIPLE_CHOICES = 300,
+    STATUS_CODE__MOVED_PERMANENTLY = 301,
+    STATUS_CODE__FOUND = 302,
+    STATUS_CODE__SEE_OTHER = 303,
+    STATUS_CODE__NOT_MODIFIED = 304,
+    STATUS_CODE__USE_PROXY = 305,
+    STATUS_CODE__UNUSED = 306,
+    STATUS_CODE__TEMPORARY_REDIRECT = 307,
+    STATUS_CODE__PERMANENT_REDIRECT = 308,
+
+    //Client error status codes
+    STATUS_CODE__BAD_REQUEST = 400,
+    STATUS_CODE__UNAUTHORIZED = 401,
+    STATUS_CODE__PAYMENT_REQUIRED = 402,
+    STATUS_CODE__FORBIDDEN = 403,
+    STATUS_CODE__NOT_FOUND = 404,
+    STATUS_CODE__METHOD_NOT_ALLOWED = 405,
+    STATUS_CODE__NOT_ACCEPTABLE = 406,
+    STATUS_CODE__REQUEST_TIMEOUT = 408,
+    STATUS_CODE__CONFLICT = 409,
+    STATUS_CODE__GONE = 410,
+    STATUS_CODE__LENGTH_REQUIRED = 411,
+    STATUS_CODE__PRECONDITION_FAILED = 412,
+    STATUS_CODE__PAYLOAD_TOO_LARGE = 413,
+    STATUS_CODE__URI_TOO_LONG = 414,
+    STATUS_CODE__UNSUPPORTED_MEDIA_TYPE = 415,
+    STATUS_CODE__RANGE_NOT_SATISFIABLE = 416,
+    STATUS_CODE__EXPECTATION_FAILED = 417,
+    STATUS_CODE__IM_A_TEAPOT = 418,
+    STATUS_CODE__MISDIRECTED_REQUEST = 421,
+    STATUS_CODE__UNPROCESSABLE_ENTITY = 422,
+    STATUS_CODE__LOCKED = 423,
+    STATUS_CODE__FAILED_DEPENDENCY = 424,
+    STATUS_CODE__TOO_EARLY = 425,
+    STATUS_CODE__UPGRADE_REQUIRED = 426,
+    STATUS_CODE__PRECONDOTION_REQUIRED = 428,
+    STATUS_CODE__TOO_MANY_REQUESTS = 429,
+    STATUS_CODE__REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
+    STATUS_CODE__UNAVAILABLE_FOR_LEGAL_REASONS = 451,
+
+    //Server error status codes
+    STATUS_CODE__INTERNAL_SERVER_ERROR = 500,
+    STATUS_CODE__NOT_IMPLEMENTED = 501,
+    STATUS_CODE__BAD_GATEWAY = 502,
+    STATUS_CODE__SERVICE_UNAVAILABLE = 503,
+    STATUS_CODE__GATEWAY_TIMEOUT = 504,
+    STATUS_CODE__HTTP_VERSION_NOT_SUPPORTED = 505,
+    STATUS_CODE__VARIANT_ALSO_NEGOTIATES = 506,
+    STATUS_CODE__INSUFFICIENT_STORAGE = 507,
+    STATUS_CODE__LOOP_DETECTED = 508,
+    STATUS_CODE__NOT_EXTENDED = 510,
+    STATUS_CODE__NETWORK_AUTHENTICATION_REQUIRED = 511,
+    STATUS_CODE__UNKNOWN
+} http_status_t;
+
+typedef struct http_request {
+    http_method_t method;
+    char* path;
+    char* content_type;
+    char* query;
+    char* body;
+    size_t body_length;
+} http_request_t;
+
+typedef struct http_response {
+    http_status_t status;
+    char* headers;
+    char* content_type;
+    char* body;
+    size_t body_length;
+} http_response_t;
+
+typedef int (http_handler_t)(http_request_t* request, http_response_t* response);
+
+const char* http_status_string(http_status_t status);
+const char* http_method_string(http_method_t method);
+#endif // __HTTP_TYPES_H__
