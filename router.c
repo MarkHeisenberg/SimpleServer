@@ -220,17 +220,16 @@ void http_router_handle(http_router_t *router, http_request_t *request, http_res
     if(r->handlers[request->method] != NULL) {
         response->status = HTTP_STATUS_CODE__OK;
         for(struct http_middleware *m = r->middleware; m != NULL; m = m->next){
-            const int result = r->middleware->handler(request, response);
+            const int result = m->handler(request, response);
             switch(result) {
                 case -1: 
                     response->status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
                     if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
                     return;
-                case 0:
-                    break;
                 case 1:
                     if(root->on_success != NULL) root->on_success(request, response, root->on_success_data);
                     return;
+                default: break;
             }
         }
         if(r->handlers[request->method](request, response) == 0) {

@@ -96,7 +96,7 @@ typedef struct http_request {
     http_method_t method;
     char* path;
     char* content_type;
-    char* query;
+    char* headers;
     char* body;
     size_t body_length;
 } http_request_t;

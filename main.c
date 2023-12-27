@@ -1,129 +1,57 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
-#include "router.h"
+#include "types.h"
+#include "server.h"
+#include "query.h"
 
+on_connect_cb on_connect;
 
-http_router_callback_t def_callback;
-
-static void print_request(http_request_t *req){
-    printf("method: %s\n", http_method_string(req->method));
-    printf("path: %s\n", req->path);
+#define BUFFER_SIZE 1024
+void on_connect(server_t *server, client_info_t* client){
+    printf("Client connected: %s\n", client->ip);
+    char buffer[BUFFER_SIZE] = {0};
+    server_read(server, client, buffer, BUFFER_SIZE);
+    char *pbuf = buffer + 1;
+    while(*pbuf != '\0' || pbuf <= &buffer[BUFFER_SIZE]) {
+        if(*pbuf == '\n' && *(pbuf-1) == '\n') 
+            *pbuf = '\0';
+        pbuf++;
+    }
+    http_request_t req = {
+        .headers = buffer,
+        .body = ++pbuf
+    };
+    printf("Headers: \n%s\n", req.headers);
+    http_query_get(&req);
+    server_write(server, client, buffer, strlen(buffer));
+    server_close(server, client);
 }
 
-static void print_response(http_response_t *resp){
-    printf("status: %s\n", http_status_string(resp->status));
-    printf("headers: %s\n", resp->headers);
-    printf("body_length: %ld\n", resp->body_length);
-    printf("content_type: %s\n", resp->content_type);
-    printf("body: %s\n", resp->body);
+static int running = 1;
 
+void sigint_handler(int sig){
+    running = 0;
 }
 
-void def_callback(http_request_t *req, http_response_t *resp, void* data){
-    printf("\n==================== REQUEST =====================\n");
-    print_request(req);
-    printf("===================== RESPONSE =====================\n"); 
-    print_response(resp);
-    printf("\n==================================================\n");
-}
-
-#define CREATE_HANDLER(name) \
-http_handler_t name; \
-int name(http_request_t *req, http_response_t *resp){ \
-    resp->status = 200; \
-    resp->content_type = "text/plain"; \
-    resp->body = "Handler \""#name"\""; \
-    resp->body_length = strlen(resp->body); \
-    printf("Handler \""#name"\"\n"); \
-    return 0; \
-}
-
-CREATE_HANDLER(def_handler)
-CREATE_HANDLER(hello_handler)
-CREATE_HANDLER(hello2_handler)
-CREATE_HANDLER(hello_hello_handler)
-CREATE_HANDLER(hello_unexpected_handler)
-CREATE_HANDLER(middleware)
 
 int main(int argc, char *argv[]){
-    http_router_t *router = http_router_create();
-    if(router == NULL){
-        printf("router create failed\n");
-        return -1;
+    server_t *server = server_create("0.0.0.0", 3002);
+    if(server_set_on_connect_cb(server, on_connect)){
+        printf("Error setting on_connect callback\n");
+        return 1;
     }
 
-    if(http_router_set_route(router, "/", HTTP_METHOD_GET, def_handler)){
-        printf("set route failed\n");
-        return -1;
+    if(server_run(server)){
+        printf("Error running server\n");
+        return 1;
     }
 
-    if(http_router_set_route(router, "/hello", HTTP_METHOD_GET, hello_handler)){
-        printf("set route failed\n");
-        return -1;
-    }
+    while(running){};
 
-    if(http_router_set_route(router, "/hello/hello/2", HTTP_METHOD_GET, hello2_handler)
-        || http_router_add_middleware(router, "/hello/hello/2", middleware)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_set_route(router, "/hello/hello", HTTP_METHOD_POST, hello_hello_handler)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_set_route(router, "/hello/unexpected", HTTP_METHOD_POST, hello_unexpected_handler)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_set_route(router, "/h/u", HTTP_METHOD_POST, hello_unexpected_handler)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_set_route(router, "/h/unexpected", HTTP_METHOD_POST, hello_unexpected_handler)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_on_success(router, def_callback, NULL)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    if(http_router_on_error(router, def_callback, NULL)){
-        printf("set route failed\n");
-        return -1;
-    }
-
-    http_request_t req = {
-        .path = "/",
-        .method = HTTP_METHOD_GET
-    };
-
-    http_response_t resp = {0};
-    // http_router_handle(router, &req, &resp);
-    // req.path = "/hello";
-    // http_router_handle(router, &req, &resp);
-    // req.path = "/hello/hello";
-    // http_router_handle(router, &req, &resp);
-    // req.path = "/hello/hello2";
-    // http_router_handle(router, &req, &resp);
-    req.path = "/hello/hello/2";
-    http_router_handle(router, &req, &resp);
-
-    if(http_router_remove_middleware(router, "/hello/hello/2", middleware)){
-        printf("remove middleware failed\n");
-    } else {
-        printf("remove middleware success\n");
-        req.path = "/hello/hello/2";
-        http_router_handle(router, &req, &resp);
-    }
-
-    http_router_destroy(router);
+    server_stop(server);
+    server_destroy(server);
     return 0;
 }
