@@ -1,6 +1,8 @@
 #ifndef __HTTP_LIST_H__
 #define __HTTP_LIST_H__
 
+#include <stdlib.h>
+
 typedef struct iterator {
     struct iterator* prev;
     struct iterator* next;

@@ -109,18 +109,16 @@ const char *http_status_string(http_status_t status)
 const char *http_method_string(http_method_t method)
 {
     static const char *strings[] = {
-        [GET] = "GET",
-        [POST] = "POST",
-        [PUT] = "PUT",
-        [DELETE] = "DELETE",
-        [HEAD] = "HEAD",
-        [OPTIONS] = "OPTIONS",
-        [CONNECT] = "CONNECT",
-        [TRACE] = "TRACE",
-        [PATCH] = "PATCH",
-        [UNKNOWN] = "UNKNOWN"};
+        [HTTP_METHOD_GET] = "GET",
+        [HTTP_METHOD_POST] = "POST",
+        [HTTP_METHOD_PUT] = "PUT",
+        [HTTP_METHOD_DELETE] = "DELETE",
+        [HTTP_METHOD_HEAD] = "HEAD",
+        [HTTP_METHOD_OPTIONS] = "OPTIONS",
+        [HTTP_METHOD_CONNECT] = "CONNECT",
+        [HTTP_METHOD_TRACE] = "TRACE",
+        [HTTP_METHOD_PATCH] = "PATCH",
+        [HTTP_METHOD_COUNT] = "UNKNOWN"};
 
-    static int size = sizeof(strings) / sizeof(strings[0]);
-
-    return strings[method < size && method >= 0 ? method : UNKNOWN];
+    return strings[method < HTTP_METHOD_COUNT && method >= 0 ? method : HTTP_METHOD_COUNT];
 }

@@ -1,48 +1,105 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
-#include "server.h"
-#include "http/types.h"
-#include "http/list.h"
+#include "router.h"
 
-on_connect_cb on_connect;
 
-void on_connect(server_t *server, client_info_t *client){
-    printf("Client connected: %s:%d\n", client->ip, client->port);
-    char buff[1024] = {0};
-    if(server_read(server, client, buff, 1024)){
-        printf("Client sent: \n%s\n", buff);
-        server_write(server, client, "Hello from server!", 19);
-    }
-    server_close(server, client);
+http_router_callback_t def_callback;
+
+static void print_request(http_request_t *req){
+    printf("method: %s\n", http_method_string(req->method));
+    printf("path: %s\n", req->path);
 }
 
+static void print_response(http_response_t *resp){
+    printf("status: %s\n", http_status_string(resp->status));
+    printf("headers: %s\n", resp->headers);
+    printf("body_length: %ld\n", resp->body_length);
+    printf("content_type: %s\n", resp->content_type);
+    printf("body: %s\n", resp->body);
+
+}
+
+void def_callback(http_request_t *req, http_response_t *resp, void* data){
+    printf("\n==================== REQUEST =====================\n");
+    print_request(req);
+    printf("===================== RESPONSE =====================\n"); 
+    print_response(resp);
+    printf("\n==================================================\n");
+}
+
+#define CREATE_HANDLER(name) \
+http_handler_t name; \
+int name(http_request_t *req, http_response_t *resp){ \
+    resp->status = 200; \
+    resp->content_type = "text/plain"; \
+    resp->body = "Handler \""#name"\""; \
+    resp->body_length = strlen(resp->body); \
+    return 0; \
+}
+
+CREATE_HANDLER(def_handler)
+CREATE_HANDLER(hello_handler)
+CREATE_HANDLER(hello2_handler)
+CREATE_HANDLER(hello_hello_handler)
+
 int main(int argc, char *argv[]){
-    list_t *list = list_create();
-    if(list == NULL){
-        printf("Error creating list\n");
+    http_router_t *router = http_router_create();
+    if(router == NULL){
+        printf("router create failed\n");
         return -1;
     }
 
-    if(list_push_back(list, "Hello", 6)
-        || list_push_back(list, "World", 6)
-        || list_push_back(list, "!", 1)
-        || list_push_front(list, " <> ", 5)){
-            printf("Error adding to list\n");
-            list_destroy(list);
-            return -1;
-        }
-
-    printf("List: ");
-    for(iterator_t *it = list_begin(list); it; it = it->next){
-        printf("%s ", (char *)it->data);
+    if(http_router_set_route(router, "/", HTTP_METHOD_GET, def_handler)){
+        printf("set route failed\n");
+        return -1;
     }
-    printf("\n");
 
-    printf("List by element: \n");
-    for(iterator_t *it = list_begin(list); it; it = it->next){
-        printf("\t data: %s\t size: %ld\n", (char *)it->data, it->size);
+    if(http_router_set_route(router, "/hello", HTTP_METHOD_GET, hello_handler)){
+        printf("set route failed\n");
+        return -1;
     }
-    printf("\n");
-    list_destroy(list);
+
+    if(http_router_set_route(router, "/hello/hello/2", HTTP_METHOD_GET, hello2_handler)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_set_route(router, "/hello/hello", HTTP_METHOD_POST, hello_hello_handler)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_on_success(router, def_callback, NULL)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_on_error(router, def_callback, NULL)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    http_request_t req = {
+        .path = "/",
+        .method = HTTP_METHOD_GET
+    };
+
+    http_response_t resp = {0};
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello";
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello/hello";
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello/hello2";
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello/hello/2";
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello2";
+    http_router_handle(router, &req, &resp);
+    req.path = "/hello/hello";
+    req.method = HTTP_METHOD_POST;
+    http_router_handle(router, &req, &resp);
+    return 0;
 }
