@@ -3,10 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef DEBUG
-#include <stdio.h>
-#endif
-
 struct http_middleware {
     struct http_middleware* next; // Next middleware in chain
     http_handler_t* handler; // Handler for this middleware
@@ -173,56 +169,75 @@ void http_router_handle(http_router_t *router, http_request_t *request, http_res
     struct http_router_root *root = (struct http_router_root *)router;
     if(root->on_success == NULL) {
         response->status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
-        if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+        if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
     }
     
     if(request == NULL){
         response->status = HTTP_STATUS_CODE__BAD_REQUEST;
-        if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+        if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
         return;
     }
 
     if(request->path == NULL) {
         response->status = HTTP_STATUS_CODE__BAD_REQUEST;
-        if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+        if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
         return;
     };
     
     http_router_t *r = http_router_find_route(router, request->path);
     if(r == NULL){
         response->status = HTTP_STATUS_CODE__NOT_FOUND;
-        if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+        if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
         return;
     }
 
     if(r->handlers[request->method] != NULL) {
         response->status = HTTP_STATUS_CODE__OK;
         for(struct http_middleware *m = r->middleware; m != NULL; m = m->next){
-            const int result = r->middleware->handler(request, &response);
+            const int result = r->middleware->handler(request, response);
             switch(result) {
                 case -1: 
                     response->status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
-                    if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+                    if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
                     return;
                 case 0:
                     break;
                 case 1:
-                    if(root->on_success != NULL) root->on_success(request, &response, root->on_success_data);
+                    if(root->on_success != NULL) root->on_success(request, response, root->on_success_data);
                     return;
             }
         }
-        if(r->handlers[request->method](request, &response) == 0) {
-            if(root->on_success != NULL) root->on_success(request, &response, root->on_success_data);
+        if(r->handlers[request->method](request, response) == 0) {
+            if(root->on_success != NULL) root->on_success(request, response, root->on_success_data);
         } else {
             response->status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
-            if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+            if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
         }
     } else {
         response->status = HTTP_STATUS_CODE__NOT_FOUND;
-        if(root->on_failure != NULL) root->on_failure(request, &response, root->on_failure_data);
+        if(root->on_failure != NULL) root->on_failure(request, response, root->on_failure_data);
     }
 }
 
 void http_router_destroy(http_router_t *router)
 {
+    if(router == NULL) return;
+    http_router_t *r = router;
+    while(r != NULL){
+        if(r->child != NULL) http_router_destroy(r->child);
+        
+        if(r->middleware != NULL) {
+            struct http_middleware *m = r->middleware;
+            while(m != NULL){
+                struct http_middleware *next = m->next;
+                free(m);
+                m = next;
+            }
+        }
+
+        http_router_t *next = r->next;
+        if(r->path) free(r->path);
+        free(r);
+        r = next;
+    }
 }

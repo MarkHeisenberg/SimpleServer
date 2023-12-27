@@ -43,6 +43,7 @@ CREATE_HANDLER(def_handler)
 CREATE_HANDLER(hello_handler)
 CREATE_HANDLER(hello2_handler)
 CREATE_HANDLER(hello_hello_handler)
+CREATE_HANDLER(hello_unexpected_handler)
 
 int main(int argc, char *argv[]){
     http_router_t *router = http_router_create();
@@ -67,6 +68,21 @@ int main(int argc, char *argv[]){
     }
 
     if(http_router_set_route(router, "/hello/hello", HTTP_METHOD_POST, hello_hello_handler)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_set_route(router, "/hello/unexpected", HTTP_METHOD_POST, hello_unexpected_handler)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_set_route(router, "/h/u", HTTP_METHOD_POST, hello_unexpected_handler)){
+        printf("set route failed\n");
+        return -1;
+    }
+
+    if(http_router_set_route(router, "/h/unexpected", HTTP_METHOD_POST, hello_unexpected_handler)){
         printf("set route failed\n");
         return -1;
     }
@@ -101,5 +117,7 @@ int main(int argc, char *argv[]){
     req.path = "/hello/hello";
     req.method = HTTP_METHOD_POST;
     http_router_handle(router, &req, &resp);
+
+    http_router_destroy(router);
     return 0;
 }
