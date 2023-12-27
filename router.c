@@ -139,12 +139,38 @@ int http_router_remove_route(http_router_t *router, const char *route, http_meth
 
 int http_router_add_middleware(http_router_t *router, const char *route, http_handler_t *middleware)
 {
+    if(router == NULL) return -1;
+    if(route == NULL) return -1;
+    if(middleware == NULL) return -1;
+    http_router_t *r = http_router_find_route(router, route);
+    if(r == NULL) return -1;
+    struct http_middleware *m = malloc(sizeof(*m));
+    if(m == NULL) return -1;
+    m->handler = middleware;
+    m->next = r->middleware;
+    r->middleware = m;
     return 0;
 }
 
 int http_router_remove_middleware(http_router_t *router, const char *route, http_handler_t *middleware)
 {
-    return 0;
+    if(router == NULL) return -1;
+    if(route == NULL) return -1;
+    if(middleware == NULL) return -1;
+    http_router_t *r = http_router_find_route(router, route);
+    if(r == NULL) return -1;
+    struct http_middleware *prev = NULL;
+    for(struct http_middleware *m = r->middleware; m; m = m->next){
+        if(m->handler == middleware){
+            struct http_middleware *next = m->next;
+            if(prev) prev->next = next;
+            if(m == r->middleware) r->middleware = next;
+            free(m);
+            return 0;
+        }
+        prev = m;
+    }
+    return -1;
 }
 
 int http_router_on_success(http_router_t *router, http_router_callback_t *callback, void *data)

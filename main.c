@@ -36,6 +36,7 @@ int name(http_request_t *req, http_response_t *resp){ \
     resp->content_type = "text/plain"; \
     resp->body = "Handler \""#name"\""; \
     resp->body_length = strlen(resp->body); \
+    printf("Handler \""#name"\"\n"); \
     return 0; \
 }
 
@@ -44,6 +45,7 @@ CREATE_HANDLER(hello_handler)
 CREATE_HANDLER(hello2_handler)
 CREATE_HANDLER(hello_hello_handler)
 CREATE_HANDLER(hello_unexpected_handler)
+CREATE_HANDLER(middleware)
 
 int main(int argc, char *argv[]){
     http_router_t *router = http_router_create();
@@ -62,7 +64,8 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-    if(http_router_set_route(router, "/hello/hello/2", HTTP_METHOD_GET, hello2_handler)){
+    if(http_router_set_route(router, "/hello/hello/2", HTTP_METHOD_GET, hello2_handler)
+        || http_router_add_middleware(router, "/hello/hello/2", middleware)){
         printf("set route failed\n");
         return -1;
     }
@@ -103,20 +106,23 @@ int main(int argc, char *argv[]){
     };
 
     http_response_t resp = {0};
-    http_router_handle(router, &req, &resp);
-    req.path = "/hello";
-    http_router_handle(router, &req, &resp);
-    req.path = "/hello/hello";
-    http_router_handle(router, &req, &resp);
-    req.path = "/hello/hello2";
-    http_router_handle(router, &req, &resp);
+    // http_router_handle(router, &req, &resp);
+    // req.path = "/hello";
+    // http_router_handle(router, &req, &resp);
+    // req.path = "/hello/hello";
+    // http_router_handle(router, &req, &resp);
+    // req.path = "/hello/hello2";
+    // http_router_handle(router, &req, &resp);
     req.path = "/hello/hello/2";
     http_router_handle(router, &req, &resp);
-    req.path = "/hello2";
-    http_router_handle(router, &req, &resp);
-    req.path = "/hello/hello";
-    req.method = HTTP_METHOD_POST;
-    http_router_handle(router, &req, &resp);
+
+    if(http_router_remove_middleware(router, "/hello/hello/2", middleware)){
+        printf("remove middleware failed\n");
+    } else {
+        printf("remove middleware success\n");
+        req.path = "/hello/hello/2";
+        http_router_handle(router, &req, &resp);
+    }
 
     http_router_destroy(router);
     return 0;
