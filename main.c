@@ -25,7 +25,18 @@ void on_connect(server_t *server, client_info_t* client){
         .body = ++pbuf
     };
     printf("Headers: \n%s\n", req.headers);
-    http_query_get(&req);
+    http_query_t *query = http_query_get(&req);
+    if(query == NULL){
+        printf("Error parsing query\n");
+    }else{
+        char name[25];
+        if(http_query_get_string(query, "name", name, 25) > 0){
+            printf("Hello  %s!\n", name);
+        } else {
+            printf("Hello anononymous!\n");
+        }
+        http_query_fprintf_query(query, stdout);
+    }
     server_write(server, client, buffer, strlen(buffer));
     server_close(server, client);
 }
