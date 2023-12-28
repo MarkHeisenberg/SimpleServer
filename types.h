@@ -97,9 +97,10 @@ struct http_headers;
 typedef struct http_request {
     http_method_t method;
     char* path;
-    char* version;
-    char* data;
+    const char* data;
     size_t data_length;
+    const char* body;
+    size_t body_length;
 } http_request_t;
 
 typedef struct http_response {

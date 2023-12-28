@@ -117,7 +117,7 @@ int http_headers_set(http_headers_t *headers, char *name, char *value)
     return 0;
 }
 
-char *http_headers_get_header(http_headers_t *headers, char *name)
+char *http_headers_get(http_headers_t *headers, char *name)
 {
     iterator_t *it = http_headers_find_header(headers, name);
     return it ? ((struct http_header_pair *)it->data)->value : NULL;
