@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 struct server {
     int fd;
@@ -64,6 +65,15 @@ static void *server_run_thread(void *arg)
     return NULL;
 }
 
+int server_set_timeout(server_t *server, int ms)
+{
+    if(!server || !server->running) return -1;
+    struct timeval tv;
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    return setsockopt(server->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+}
+
 int server_run(server_t *server)
 {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -97,8 +107,8 @@ int server_stop(server_t *server)
     if(!server) return -1;
     if(server->running == false) return 0;
     server->running = false;
-    pthread_join(server->tid, NULL);
     close_socket(server->fd);
+    pthread_join(server->tid, NULL);
     return 0;
 }
 

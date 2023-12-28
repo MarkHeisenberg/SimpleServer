@@ -92,19 +92,19 @@ typedef enum http_status {
     HTTP_STATUS_CODE__UNKNOWN
 } http_status_t;
 
+struct http_headers;
+
 typedef struct http_request {
     http_method_t method;
     char* path;
-    char* content_type;
-    char* headers;
-    char* body;
-    size_t body_length;
+    char* version;
+    char* data;
+    size_t data_length;
 } http_request_t;
 
 typedef struct http_response {
     http_status_t status;
-    char* headers;
-    char* content_type;
+    struct http_headers *headers;
     char* body;
     size_t body_length;
 } http_response_t;

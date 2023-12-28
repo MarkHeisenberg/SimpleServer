@@ -22,13 +22,11 @@ struct http_query_param {
 static char* http_query_find_query(http_request_t *req)
 {
     if(req == NULL) return NULL;
-    if(req->headers == NULL) return NULL;
-    const int len = strlen(req->headers);
-    if(len == 0) return NULL;
-    const char *headers_end = req->headers + len;
+    if(req->data == NULL) return NULL;
+    const char *data_end = req->data + req->data_length;
     char *start = NULL, *end = NULL;
-    start = end = req->headers;
-    while(end != NULL && *end != '\0' && *end != '\n' && end <= headers_end){
+    start = end = req->data;
+    while(end != NULL && *end != '\n' && end <= data_end){
         end++; //pointer to the end of the line
     } 
     if(end == NULL || end == start) return NULL;
@@ -182,13 +180,13 @@ int http_query_get_bool(http_query_t *query, const char *name, bool *val)
     return 1;
 }
 
-void http_query_fprintf_query(http_query_t *query, FILE *fp)
+void http_query_fprintf(http_query_t *query, FILE *fp)
 {
     if(query == NULL || fp  == NULL) return;
     fprintf(fp, "[\n");
     for(iterator_t *it = list_begin(query->list); it != NULL; it = it->next){
         struct http_query_param *p = (struct http_query_param*)it->data;
-        fprintf(fp, "\t\"%s\" => \"%s\",\n", p->key, p->val);
+        fprintf(fp, "\t[\"%s\"] => \"%s\",\n", p->key, p->val);
     }
     fprintf(fp, "]\n");
 }

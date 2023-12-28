@@ -187,4 +187,5 @@ void list_destroy(list_t *list)
     while(list->head) {
         list_pop_front(list, NULL, 0);
     }
+    free(list);
 }

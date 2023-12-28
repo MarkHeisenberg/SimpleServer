@@ -6,39 +6,102 @@
 #include "types.h"
 #include "server.h"
 #include "query.h"
+#include "headers.h"
 
 on_connect_cb on_connect;
 
 #define BUFFER_SIZE 1024
 void on_connect(server_t *server, client_info_t* client){
+    printf("==========================================================================\n");
+    printf("============================ NEW CONNECTION ==============================\n");
+    printf("==========================================================================\n");
     printf("Client connected: %s\n", client->ip);
     char buffer[BUFFER_SIZE] = {0};
-    server_read(server, client, buffer, BUFFER_SIZE);
-    char *pbuf = buffer + 1;
-    while(*pbuf != '\0' || pbuf <= &buffer[BUFFER_SIZE]) {
-        if(*pbuf == '\n' && *(pbuf-1) == '\n') 
-            *pbuf = '\0';
-        pbuf++;
+    const int len = server_read(server, client, buffer, BUFFER_SIZE);
+    if(len < 0){
+        server_close(server, client);
+        return;
     }
+    printf("Received %d bytes: %s\n", len, buffer);
+    printf("==========================================================================\n");
+    printf("============================= PARSED VALUES ==============================\n");
+    printf("==========================================================================\n");
     http_request_t req = {
-        .headers = buffer,
-        .body = ++pbuf
+        .data = buffer,
+        .data_length = len,
     };
-    printf("Headers: \n%s\n", req.headers);
+
+    char name[25];
     http_query_t *query = http_query_get(&req);
     if(query == NULL){
         printf("Error parsing query\n");
     }else{
-        char name[25];
         if(http_query_get_string(query, "name", name, 25) > 0){
             printf("Hello  %s!\n", name);
         } else {
-            printf("Hello anononymous!\n");
+            name[0] = '\0';
         }
-        http_query_fprintf_query(query, stdout);
+        printf("Query:\n");
+        http_query_fprintf(query, stdout);
+        http_query_free(query);
     }
+
+    http_headers_t *headers = http_headers_parse(&req);
+    if(headers == NULL){
+        printf("Error parsing headers\n");
+    } else {
+        printf("Headers:\n");
+        http_headers_fprintf(headers, stdout);
+        http_headers_free(headers);
+    }
+
+    http_response_t res;
+    res.status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
+    int cursor = sprintf(buffer, "HTTP/2.0 ");
+    
+    res.headers = http_headers_create();
+    if(res.headers == NULL){
+        sprintf(buffer + cursor, "%d %s\r\n", res.status, http_status_string(res.status));
+        printf("==========================================================================\n");
+        printf("================================= ANSWER =================================\n");
+        printf("==========================================================================\n");
+        printf("Response:\n");
+        printf("%s\n", buffer);
+        server_write(server, client, buffer, strlen(buffer));
+        server_close(server, client);
+        printf("==========================================================================\n");
+        return;
+    }
+
+    res.status = HTTP_STATUS_CODE__OK;
+    char message[100];
+    snprintf(message, 100, "Hello %s!", name[0] == '\0' ? "Anonymouse" : name);
+    char content_length[20];
+    snprintf(content_length, 20, "%ld", strlen(message) + 2);
+    http_headers_set(res.headers, "Content-Type", "text/plain");
+    http_headers_set(res.headers, "Content-Language", "en-US");
+    http_headers_set(res.headers, "Connection", "keep-alive");
+    http_headers_set(res.headers, "Server", "MyServer");
+    http_headers_set(res.headers, "Content-Length", content_length);
+    http_headers_set(res.headers, "Age", "0");
+    http_headers_set(res.headers, "Cache-Control", "private");
+
+    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "%d %s\r\n", res.status, http_status_string(res.status));
+    cursor += http_headers_snprint(res.headers, buffer + cursor, BUFFER_SIZE - cursor);
+
+    http_headers_free(res.headers);
+
+    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "\r\n");
+    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "Hello %s!", name[0] == '\0' ? "Anonymouse" : name);
+
+    printf("==========================================================================\n");
+    printf("================================= ANSWER =================================\n");
+    printf("==========================================================================\n");
+    printf("Response:\n");
+    printf("%s\n", buffer);
     server_write(server, client, buffer, strlen(buffer));
     server_close(server, client);
+    printf("==========================================================================\n");
 }
 
 static int running = 1;
@@ -52,13 +115,17 @@ int main(int argc, char *argv[]){
     server_t *server = server_create("0.0.0.0", 3002);
     if(server_set_on_connect_cb(server, on_connect)){
         printf("Error setting on_connect callback\n");
+        server_destroy(server);
         return 1;
     }
 
     if(server_run(server)){
         printf("Error running server\n");
+        server_destroy(server);
         return 1;
     }
+
+    server_set_timeout(server, 1000);
 
     while(running){};
 

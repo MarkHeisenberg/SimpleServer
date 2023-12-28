@@ -13,8 +13,8 @@ typedef void (on_connect_cb)(server_t* server, client_info_t* client);
 
 server_t* server_create(const char* ip, int port);
 
+int server_set_timeout(server_t* server, int ms);
 int server_run(server_t* server);
-
 int server_stop(server_t* server);
 
 int server_set_on_connect_cb(server_t* server, on_connect_cb* cb);
