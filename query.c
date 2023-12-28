@@ -24,8 +24,8 @@ static char* http_query_find_query(http_request_t *req)
     if(req == NULL) return NULL;
     if(req->data == NULL) return NULL;
     const char *data_end = req->data + req->data_length;
-    char *start = NULL, *end = NULL;
-    start = end = req->data;
+    const char *start = req->data;
+    const char *end = req->data;
     while(end != NULL && *end != '\n' && end <= data_end){
         end++; //pointer to the end of the line
     } 

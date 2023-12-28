@@ -135,8 +135,8 @@ void http_headers_remove_header(http_headers_t *headers, char *name)
 
 http_headers_t *http_headers_parse(http_request_t *req)
 {
-    char *h_start = req->data;
-    char *end = (req->data + req->data_length);
+    const char *h_start = req->data;
+    const char *end = (req->data + req->data_length);
     if(h_start == NULL) return NULL;
     http_headers_t *headers = http_headers_create();
     if(headers == NULL) return NULL;
@@ -146,7 +146,7 @@ http_headers_t *http_headers_parse(http_request_t *req)
     }
     if(h_start == end) return headers;
     
-    char *h_end = h_start;
+    const char *h_end = h_start;
     for(;h_end <= end; h_end++) {
         if(( h_end + 1 < end && *h_end == '\n' && *(h_end + 1) == '\n')
             || ( h_end + 2 < end && *h_end == '\n' && *(h_end + 1) == '\r' && *(h_end + 2) == '\n')

@@ -7,6 +7,7 @@
 #include "server.h"
 #include "query.h"
 #include "headers.h"
+#include "utils.h"
 
 on_connect_cb on_connect;
 
@@ -17,7 +18,7 @@ void on_connect(server_t *server, client_info_t* client){
     printf("==========================================================================\n");
     printf("Client connected: %s\n", client->ip);
     char buffer[BUFFER_SIZE] = {0};
-    const int len = server_read(server, client, buffer, BUFFER_SIZE);
+    int len = server_read(server, client, buffer, BUFFER_SIZE);
     if(len < 0){
         server_close(server, client);
         return;
@@ -26,10 +27,8 @@ void on_connect(server_t *server, client_info_t* client){
     printf("==========================================================================\n");
     printf("============================= PARSED VALUES ==============================\n");
     printf("==========================================================================\n");
-    http_request_t req = {
-        .data = buffer,
-        .data_length = len,
-    };
+    http_request_t req = {0};
+    http_request_parse(&req, buffer, len);
 
     char name[25];
     http_query_t *query = http_query_get(&req);
@@ -56,18 +55,16 @@ void on_connect(server_t *server, client_info_t* client){
     }
 
     http_response_t res;
-    res.status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
-    int cursor = sprintf(buffer, "HTTP/2.0 ");
-    
-    res.headers = http_headers_create();
-    if(res.headers == NULL){
-        sprintf(buffer + cursor, "%d %s\r\n", res.status, http_status_string(res.status));
+    if(http_response_init(&res)){
+        res.status = HTTP_STATUS_CODE__INTERNAL_SERVER_ERROR;
+        len = http_response_write(&res, buffer, BUFFER_SIZE);
+        http_request_free(&req);
         printf("==========================================================================\n");
         printf("================================= ANSWER =================================\n");
         printf("==========================================================================\n");
         printf("Response:\n");
         printf("%s\n", buffer);
-        server_write(server, client, buffer, strlen(buffer));
+        server_write(server, client, buffer, len);
         server_close(server, client);
         printf("==========================================================================\n");
         return;
@@ -75,29 +72,23 @@ void on_connect(server_t *server, client_info_t* client){
 
     res.status = HTTP_STATUS_CODE__OK;
     char message[100];
-    snprintf(message, 100, "Hello %s!", name[0] == '\0' ? "Anonymouse" : name);
-    char content_length[20];
-    snprintf(content_length, 20, "%ld", strlen(message) + 2);
+    res.body = message;
+    res.body_length = snprintf(message, 100, "Hello %s!", name[0] == '\0' ? "Anonymouse" : name);
+
     http_headers_set(res.headers, "Content-Type", "text/plain");
     http_headers_set(res.headers, "Content-Language", "en-US");
     http_headers_set(res.headers, "Connection", "keep-alive");
     http_headers_set(res.headers, "Server", "MyServer");
-    http_headers_set(res.headers, "Content-Length", content_length);
     http_headers_set(res.headers, "Age", "0");
     http_headers_set(res.headers, "Cache-Control", "private");
-
-    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "%d %s\r\n", res.status, http_status_string(res.status));
-    cursor += http_headers_snprint(res.headers, buffer + cursor, BUFFER_SIZE - cursor);
-
-    http_headers_free(res.headers);
-
-    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "\r\n");
-    cursor += snprintf(buffer + cursor, BUFFER_SIZE - cursor, "Hello %s!", name[0] == '\0' ? "Anonymouse" : name);
 
     printf("==========================================================================\n");
     printf("================================= ANSWER =================================\n");
     printf("==========================================================================\n");
     printf("Response:\n");
+    len = http_response_write(&res, buffer, BUFFER_SIZE);
+    http_response_free(&res);
+    http_request_free(&req);
     printf("%s\n", buffer);
     server_write(server, client, buffer, strlen(buffer));
     server_close(server, client);

@@ -64,6 +64,17 @@ void http_request_free(http_request_t *request)
     request->method = HTTP_METHOD_COUNT;
 }
 
+int http_response_init(http_response_t *response)
+{
+    if(response == NULL) return -1;
+    response->headers = http_headers_create();
+    if(response->headers == NULL) return -1;
+    response->status = 200;
+    response->body = NULL;
+    response->body_length = -1;
+    return 0;
+}
+
 int http_response_write(http_response_t *response, char *data, size_t length)
 {
     if (data == NULL || length < 1) return -1;
@@ -72,7 +83,7 @@ int http_response_write(http_response_t *response, char *data, size_t length)
         if(response->body_length < 0) return -1;
         body_len_str = (char*)malloc(20);
         if(body_len_str == NULL) return -1;
-        snprintf(body_len_str, 20, "%d", response->body_length);
+        snprintf(body_len_str, 20, "%ld", response->body_length);
         if(http_headers_set(response->headers, "Content-Length", body_len_str)){
             free(body_len_str);
             return -1;
@@ -96,11 +107,11 @@ int http_response_write(http_response_t *response, char *data, size_t length)
     res = snprintf(data + cursor, length - cursor, "%s", response->body);
     if(res < 0) return -1;
     cursor += res;
-
-    return 0;
+    return cursor;
 }
 
 void http_response_free(http_response_t *response)
 {
     if(response == NULL) return;
+    http_headers_free(response->headers);
 }
