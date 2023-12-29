@@ -147,11 +147,12 @@ http_headers_t *http_headers_parse(http_request_t *req)
     if(h_start == end) return headers;
     
     const char *h_end = h_start;
-    for(;h_end <= end; h_end++) {
-        if(( h_end + 1 < end && *h_end == '\n' && *(h_end + 1) == '\n')
-            || ( h_end + 2 < end && *h_end == '\n' && *(h_end + 1) == '\r' && *(h_end + 2) == '\n')
-        ) {
-            break;
+    for(;h_end < end; h_end++) {
+        if(*h_end == '\n'){
+            if((h_end + 1 < end && *(h_end + 1) == '\n') || (h_end + 2 < end && *(h_end + 1) == '\r' && *(h_end + 2) == '\n')){
+                h_end++;
+                break;
+            } 
         }
     }
 

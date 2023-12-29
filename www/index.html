@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <style>
+        form {
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80%;
+        }
+
+        .btn {
+            background: #88ff77;
+            border-radius: 5px;
+            border: #88ff77 solid 1px;
+            padding: 10px;
+            color: #2c362a;
+        }
+
+        .input {
+            padding: 2px;
+            display: grid;
+        }
+
+        .input label {
+            grid-column: 1;
+        }
+
+        .input input {
+            grid-column: 2;
+        }
+
+    </style>
+    <form action="/greetings" method="post">
+        <div class="input">
+            <label>Name:</label>
+            <input type="text" name="name" id="name">
+        </div>
+        <div class="input">
+            <label>Second name:</label>
+            <input type="text" name="second-name" id="name">
+        </div>
+        <div class="input">
+            <input class="btn" type="submit" value="submit">
+        </div>
+    </form>
+</body>
+</html>
