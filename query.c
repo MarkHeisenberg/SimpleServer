@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "list.h"
+#include "utils.h"
 
 #define PARAMETER_DELIMETER "&"
 
@@ -51,29 +52,6 @@ static iterator_t *http_query_find_parameter(http_query_t *q, const char *key){
     return NULL;
 }
 
-static void shift_str(char *str, int shift){
-    const int len = strlen(str) - shift;
-    for(int i = 0; i < len; i++){
-        str[i] = str[i + shift];
-    }
-    str[len] = '\0';
-}
-
-static char* http_uri_decode(char *str){
-    char hex[3] = {0, [2] = '\0'};
-    int len = strlen(str);
-    for(int i = 0; i < len; i++){
-        if(str[i] == '%'){
-            hex[0] = str[i + 1];
-            hex[1] = str[i + 2];
-            str[i] = (char)strtol(hex, NULL , 16);
-            shift_str(&str[i+1], 2);
-            len -= 2;
-        }
-    }
-    return str;
-}
-
 static int http_query_add_param(http_query_t *q, struct http_query_param *p){
     if(q == NULL || p == NULL || q->list == NULL) return -1;
     iterator_t *it = http_query_find_parameter(q, p->key);
@@ -104,8 +82,8 @@ static int http_query_parse_query(http_query_t *q){
     }
     for(iterator_t *it = list_begin(q->list); it != NULL; it = it->next){
         struct http_query_param *p = (struct http_query_param*)it->data;
-        p->key = http_uri_decode(p->key);
-        p->val = http_uri_decode(p->val);
+        p->key = http_util_uri_decode(p->key);
+        p->val = http_util_uri_decode(p->val);
     }
     return 0;
 }

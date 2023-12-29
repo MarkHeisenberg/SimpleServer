@@ -115,3 +115,26 @@ void http_response_free(http_response_t *response)
     if(response == NULL) return;
     http_headers_free(response->headers);
 }
+
+static void shift_str(char *str, int shift){
+    const int len = strlen(str) - shift;
+    for(int i = 0; i < len; i++){
+        str[i] = str[i + shift];
+    }
+    str[len] = '\0';
+}
+
+char* http_util_uri_decode(char *str){
+    char hex[3] = {0, [2] = '\0'};
+    int len = strlen(str);
+    for(int i = 0; i < len; i++){
+        if(str[i] == '%'){
+            hex[0] = str[i + 1];
+            hex[1] = str[i + 2];
+            str[i] = (char)strtol(hex, NULL , 16);
+            shift_str(&str[i+1], 2);
+            len -= 2;
+        }
+    }
+    return str;
+}

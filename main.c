@@ -8,6 +8,7 @@
 #include "server.h"
 #include "query.h"
 #include "headers.h"
+#include "parameters.h"
 #include "utils.h"
 
 on_connect_cb on_connect;
@@ -44,6 +45,13 @@ void on_connect(server_t *server, client_info_t* client){
         printf("Query:\n");
         http_query_fprintf(query, stdout);
         http_query_free(query);
+    }
+
+    http_parameters_t *parameters = http_parameters_parse(&req);
+    if(parameters){
+        printf("Parameters:\n");
+        http_parameters_fprintf(parameters, stdout);
+        http_parameters_free(parameters);
     }
 
     http_headers_t *headers = http_headers_parse(&req);
@@ -136,6 +144,7 @@ int main(int argc, char *argv[]){
     }
 
     server_set_timeout(server, 1000);
+
 
     while(running){};
 
