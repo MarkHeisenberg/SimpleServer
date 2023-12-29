@@ -13,7 +13,7 @@
 
 on_connect_cb on_connect;
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 65353
 void on_connect(server_t *server, client_info_t* client){
     printf("==========================================================================\n");
     printf("============================ NEW CONNECTION ==============================\n");
