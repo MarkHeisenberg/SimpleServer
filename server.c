@@ -131,6 +131,23 @@ int server_write(server_t *server, client_info_t *client, char buffer[], int siz
     return write(client->fd, buffer, size);
 }
 
+size_t server_fwrite(server_t *server, client_info_t *client, FILE *fp, size_t len)
+{
+    if(!server || !client) return -1;
+    char buffer[1024] = {0};
+    size_t total = 0;
+    while(len > 0){
+        int n = fread(buffer, 1, 1024, fp);
+        if(n <= 0) break;
+        int m = server_write(server, client, buffer, n);
+        if(m <= 0) break;
+        total += m;
+        len -= m;
+        if(len <= 0 || m < n) break;
+    }
+    return total;
+}
+
 int server_close(server_t *server, client_info_t *client)
 {
     if(!server || !client) return -1;

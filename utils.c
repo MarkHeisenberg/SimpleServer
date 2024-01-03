@@ -7,7 +7,8 @@
 http_method_t http_method_from_string(const char *string){
     if(string == NULL) return HTTP_METHOD_COUNT;
     for(int i = 0; i < HTTP_METHOD_COUNT; i++){
-        if(strcmp(string, http_method_string((http_method_t)(i))) == 0) 
+        const char *method_string = http_method_string((http_method_t)(i));
+        if(strncmp(string, method_string, strlen(method_string)) == 0) 
             return (http_method_t)(i);
     }
     return HTTP_METHOD_COUNT;
@@ -44,11 +45,13 @@ int http_request_parse(http_request_t *request, const char *data, size_t length)
     while(*p_end != ' ' && *p_end != '?' && *p_end != '\n' && *p_end != '\r' ){
         if(*p_end == '\0' || p_end == end) return -1;
         p_end++;
-    } 
-    request->path = (char*)malloc(p_end - p_start + 1);
-    memcpy(request->path, p_start, p_end - p_start);
-    request->path[p_end - p_start] = '\0';
-    request->path = NULL;
+    }
+    const int path_len = p_end - p_start;
+    if(path_len > 0){
+        request->path = (char*)malloc(path_len + 1);
+        memcpy(request->path, p_start, path_len);
+        request->path[path_len] = '\0';
+    } else request->path = NULL;
     return 0;
 }
 
@@ -104,6 +107,8 @@ int http_response_write(http_response_t *response, char *data, size_t length)
     if(res < 0) return -1;
     cursor += res;
 
+    if(response->body == NULL) return cursor;
+    
     res = snprintf(data + cursor, length - cursor, "%s", response->body);
     if(res < 0) return -1;
     cursor += res;
@@ -114,6 +119,7 @@ void http_response_free(http_response_t *response)
 {
     if(response == NULL) return;
     http_headers_free(response->headers);
+    if(response->body != NULL) free(response->body);
 }
 
 static void shift_str(char *str, int shift){
