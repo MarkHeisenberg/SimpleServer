@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "list.h"
 #include "utils.h"
@@ -79,8 +80,9 @@ int http_parameters_get_int(http_parameters_t *parameters, const char *name, int
     iterator_t *it = http_parameters_find(parameters, name);
     if(it == NULL) return -1;
     struct http_parameter_pair *pair = (struct http_parameter_pair*)it->data;
+    errno = 0;
     *val = atoi(pair->val);
-    return 0;
+    return errno;
 }
 
 int http_parameters_get_double(http_parameters_t *parameters, const char *name, double *val)
@@ -91,8 +93,9 @@ int http_parameters_get_double(http_parameters_t *parameters, const char *name, 
     iterator_t *it = http_parameters_find(parameters, name);
     if(it == NULL) return -1;
     struct http_parameter_pair *pair = (struct http_parameter_pair*)it->data;
+    errno = 0;
     *val = atof(pair->val);
-    return 0;
+    return errno;
 }
 
 int http_parameters_get_string(http_parameters_t *parameters, const char *name, char *val, int len)
@@ -104,8 +107,9 @@ int http_parameters_get_string(http_parameters_t *parameters, const char *name, 
     if(it == NULL) return -1;
     struct http_parameter_pair *pair = (struct http_parameter_pair*)it->data;
     int str_len = strlen(pair->val);
-    str_len = str_len > len ? len : str_len;
+    str_len = str_len >= len - 1 ? len - 1 : str_len;
     strncpy(val, pair->val, str_len);
+    val[str_len++] = '\0';
     return str_len;
 }
 
@@ -125,7 +129,7 @@ int http_parameters_get_bool(http_parameters_t *parameters, const char *name, in
     for(int i = 0; i < true_count; i++){
         if(strcmp(pair->val, true_str[i]) == 0){
             *val = 1;
-            return 0;
+            break;
         }
     }
     return 0;
