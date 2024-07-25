@@ -1,1 +1,26 @@
-name: test-workflow
+name: learn-github-actions
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on:
+      group: ubuntu-runners
+      labels: ubuntu-20.04-16core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '14'
+      - run: npm install -g bats
+      - run: bats -v
+
+  Test-Job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: First job
+        id: first
+        shell: bash
+        run: |
+            ls -l
+            mkdir -p a b c d
+            ls -l
+            rm $(find . -mindepth 1 -maxdepth 1 -type d ! -name "a")
