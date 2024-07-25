@@ -20,11 +20,11 @@ jobs:
         id: first
         shell: bash
         run: |
-            echo  LS before >> $GITHUB_OUTPUT
-            ls -l >> $GITHUB_OUTPUT
+            echo "LS before"
+            echo $(ls -l)
             mkdir -p a b c d
-            echo LS mkdir >> $GITHUB_OUTPUT
-            ls -l >> $GITHUB_OUTPUT
+            echo "LS mkdir"
+            echo $(ls -l)
             rm -rf $(find . -mindepth 1 -maxdepth 1 -type d ! -name "a") || true
-            echo LS after >> $GITHUB_OUTPUT
-            ls -l >> $GITHUB_OUTPUT
+            echo "LS after"
+            echo $(ls -l)
