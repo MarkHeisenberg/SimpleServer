@@ -33,5 +33,5 @@ jobs:
             mkdir -p my_dir
             python -V
             echo "Try alias"
-            sudo alias python=/usr/bin/python2.7
+            sudo ln -s python2.7 /usr/bin/python
             python -V
