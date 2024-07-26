@@ -20,6 +20,7 @@ jobs:
         id: first
         shell: bash
         run: |
+            sudo apt install python2.7 -y
             echo "LS before"
             echo $(ls -l)
             mkdir -p a b c d
