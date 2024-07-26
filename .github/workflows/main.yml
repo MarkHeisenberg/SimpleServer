@@ -31,7 +31,7 @@ jobs:
             echo $(ls -l)
             __current_dir=$PWD
             mkdir -p my_dir
-            cd my_dir
-            echo "LS my_dir $(ls -l)"
-            cd ${__current_dir}
-            echo "LS __current_dir $(ls -l)"
+            python -V
+            echo "Try alias"
+            alias python=/usr/bin/python2.7
+            python -V
