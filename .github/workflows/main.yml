@@ -33,5 +33,6 @@ jobs:
             mkdir -p my_dir
             python -V
             echo "Try alias"
+            sudo rm -f /usr/bin/python || true
             sudo ln -s python2.7 /usr/bin/python
             python -V
