@@ -33,5 +33,5 @@ jobs:
             mkdir -p my_dir
             python -V
             echo "Try alias"
-            alias python=/usr/bin/python2
+            find / -type f -name python2.7 2>/dev/null
             python -V
